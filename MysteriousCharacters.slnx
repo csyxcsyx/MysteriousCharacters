@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="MysteriousCharacters.App/MysteriousCharacters.App.csproj" />
+  <Project Path="MysteriousCharacters.SmokeTests/MysteriousCharacters.SmokeTests.csproj" />
+</Solution>

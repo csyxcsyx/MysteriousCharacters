@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "source": "鑫",
+      "candidates": [
+        { "text": "锌", "type": "Homophone", "weight": 5 },
+        { "text": "森", "type": "Similar", "weight": 2 }
+      ]
+    }
+  ]
+}
