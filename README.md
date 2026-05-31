@@ -52,7 +52,7 @@ dotnet run --project .\MysteriousCharacters.SmokeTests -- .\examples\custom-dict
 %LocalAppData%\MysteriousCharacters
 ```
 
-内置精细词典、偏旁家族库和 3500 个一级常用字生成规则作为程序集资源打包进 exe。一级常用字规则优先依据 IDS 拆字关系生成偏旁增删候选，再使用 Unicode 普通话读音和部首笔画数据补充同音、形近候选。无法可靠转换的非常用字保持原样。自定义词典格式可参考 `examples\custom-dictionary.example.json`。每条规则包含一个原字和若干候选字，原字和候选字都必须是单个真实汉字。候选类型可使用：
+内置精细词典、偏旁家族库和 3500 个一级常用字生成规则作为程序集资源打包进 exe。一级常用字规则优先依据 IDS 顶层拆字关系生成偏旁增删候选：简单字优先增加偏旁，复杂字仅在删除常见偏旁后仍保留可辨认主体时才允许自动减偏旁。随后使用 Unicode 普通话读音和部首笔画数据补充同音、形近候选，形近字不会比原字更简单。无法可靠转换的非常用字保持原样。自定义词典格式可参考 `examples\custom-dictionary.example.json`。每条规则包含一个原字和若干候选字，原字和候选字都必须是单个真实汉字。候选类型可使用：
 
 ```text
 Homophone

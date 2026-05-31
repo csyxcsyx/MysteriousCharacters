@@ -55,13 +55,20 @@ public sealed class TextTransformer
 
     private static ReplacementCandidate? PickPreferred(IReadOnlyList<ReplacementCandidate> candidates)
     {
-        var radicalCandidates = candidates
-            .Where(candidate =>
-                candidate.Type is ReplacementType.AddRadical or ReplacementType.RemoveRadical)
+        var addRadicalCandidates = candidates
+            .Where(candidate => candidate.Type == ReplacementType.AddRadical)
             .ToList();
-        if (radicalCandidates.Count > 0)
+        if (addRadicalCandidates.Count > 0)
         {
-            return PickWeighted(radicalCandidates);
+            return PickWeighted(addRadicalCandidates);
+        }
+
+        var removeRadicalCandidates = candidates
+            .Where(candidate => candidate.Type == ReplacementType.RemoveRadical)
+            .ToList();
+        if (removeRadicalCandidates.Count > 0)
+        {
+            return PickWeighted(removeRadicalCandidates);
         }
 
         var homophoneCandidates = candidates

@@ -24,6 +24,12 @@ VerifyReplacement(transformer, "清吗饭");
 VerifyReplacement(transformer, "未土日");
 VerifyReplacement(transformer, "我看着你的脸，轻刷着和弦；情人节卡片，手写的从前。。。");
 VerifyReplacement(transformer, "一乙二十丁厂七卜八人入儿匕几九刁了刀力乃");
+VerifyNeverProduces(transformer, "天", ["一", "大"]);
+VerifyNeverProduces(transformer, "看", ["手", "目"]);
+VerifyNeverProduces(transformer, "着", ["羊", "目"]);
+VerifyNeverProduces(transformer, "烟", ["火"]);
+VerifyNeverProduces(transformer, "在", ["土", "才"]);
+VerifyNeverProduces(transformer, "等", ["竹"]);
 VerifyUnmappedCharacterIsPreserved(transformer, "鑫");
 VerifyUnmappedCharacterIsPreserved(transformer, "𠀀");
 VerifyLevelOneCoverage(transformer, commonCharacterTablePath);
@@ -53,6 +59,20 @@ static void VerifyUnmappedCharacterIsPreserved(TextTransformer transformer, stri
     Assert(transformed == source, $"Unmapped text should stay unchanged: {source}->{transformed}");
     AssertNoStructureSymbols(transformed);
     Console.WriteLine($"preserved={source}");
+}
+
+static void VerifyNeverProduces(TextTransformer transformer, string source, string[] forbiddenValues)
+{
+    var forbidden = forbiddenValues.ToHashSet(StringComparer.Ordinal);
+    for (var index = 0; index < 250; index++)
+    {
+        var transformed = transformer.Transform(source);
+        Assert(
+            !forbidden.Contains(transformed),
+            $"Readability regression: {source}->{transformed}");
+    }
+
+    Console.WriteLine($"readability_checked={source}");
 }
 
 static void VerifyLevelOneCoverage(TextTransformer transformer, string commonCharacterTablePath)
