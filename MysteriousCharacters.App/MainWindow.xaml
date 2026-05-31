@@ -233,7 +233,7 @@
                                                FontSize="14"
                                                FontWeight="SemiBold"
                                                Foreground="{StaticResource MintDark}"
-                                               Text="CTRL + ALT + SHIFT + E" />
+                                                Text="CTRL + ALT + E" />
                                 </Grid>
                             </Border>
                             <Border Grid.Row="2" Padding="14,10" Background="#EAF8EF" CornerRadius="9">
@@ -254,7 +254,7 @@
                                                FontSize="14"
                                                FontWeight="SemiBold"
                                                Foreground="{StaticResource MintDark}"
-                                               Text="CTRL + ALT + SHIFT + D" />
+                                                Text="CTRL + ALT + D" />
                                 </Grid>
                             </Border>
                         </Grid>

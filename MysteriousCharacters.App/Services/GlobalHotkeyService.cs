@@ -65,7 +65,6 @@ public sealed class GlobalHotkeyService : IDisposable
         var modifiers =
             NativeMethods.ModControl |
             NativeMethods.ModAlt |
-            NativeMethods.ModShift |
             NativeMethods.ModNoRepeat;
         return NativeMethods.RegisterHotKey(_windowHandle, id, modifiers, virtualKey);
     }
