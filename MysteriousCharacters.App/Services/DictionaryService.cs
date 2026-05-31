@@ -10,8 +10,6 @@ namespace MysteriousCharacters.App.Services;
 
 public sealed class DictionaryService
 {
-    private const string EmbeddedDictionaryName = "default-dictionary.json";
-    private const string EmbeddedRadicalFamiliesName = "radical-families.json";
     private const string EmbeddedCommonCharacterRulesName = "common-character-rules.json";
 
     private readonly JsonSerializerOptions _jsonOptions = new()
@@ -34,17 +32,14 @@ public sealed class DictionaryService
 
     public IReadOnlyList<DictionaryRule> LoadRules(string? customDictionaryPath)
     {
-        var rules = ReadEmbeddedRules(EmbeddedDictionaryName)
-            .Concat(ReadEmbeddedRules(EmbeddedCommonCharacterRulesName))
-            .Concat(ReadEmbeddedRadicalFamilyRules())
-            .ToList();
+        var rules = ReadEmbeddedRules(EmbeddedCommonCharacterRulesName).ToList();
 
         if (!string.IsNullOrWhiteSpace(customDictionaryPath) && File.Exists(customDictionaryPath))
         {
             rules.AddRange(ReadRules(File.ReadAllText(customDictionaryPath)));
         }
 
-        return MergeRules(rules);
+        return OverrideRules(rules);
     }
 
     public int ImportCustomDictionary(string sourcePath)
@@ -64,64 +59,6 @@ public sealed class DictionaryService
             ?? throw new InvalidOperationException($"内置词典资源“{resourceName}”不存在。");
         using var reader = new StreamReader(stream);
         return ReadRules(reader.ReadToEnd());
-    }
-
-    private IReadOnlyList<DictionaryRule> ReadEmbeddedRadicalFamilyRules()
-    {
-        using var stream = Assembly.GetExecutingAssembly()
-            .GetManifestResourceStream(EmbeddedRadicalFamiliesName)
-            ?? throw new InvalidOperationException("内置偏旁家族资源不存在。");
-        using var reader = new StreamReader(stream);
-        var document = JsonSerializer.Deserialize<RadicalFamilyDocument>(reader.ReadToEnd(), _jsonOptions)
-            ?? throw new InvalidDataException("偏旁家族 JSON 内容为空。");
-
-        var rules = new List<DictionaryRule>();
-        foreach (var family in document.Families)
-        {
-            ValidateHanCharacter(family.Base, "偏旁家族的 base");
-            if (family.Weight <= 0 || family.Derived.Count == 0)
-            {
-                throw new InvalidDataException($"偏旁家族“{family.Base}”缺少有效派生字或权重。");
-            }
-
-            var derivedCharacters = family.Derived
-                .Distinct(StringComparer.Ordinal)
-                .Where(character => !string.Equals(character, family.Base, StringComparison.Ordinal))
-                .ToList();
-            foreach (var derived in derivedCharacters)
-            {
-                ValidateHanCharacter(derived, $"偏旁家族“{family.Base}”的派生字");
-            }
-
-            rules.Add(new DictionaryRule
-            {
-                Source = family.Base,
-                Candidates = derivedCharacters
-                    .Select(derived => new ReplacementCandidate
-                    {
-                        Text = derived,
-                        Type = ReplacementType.AddRadical,
-                        Weight = family.Weight
-                    })
-                    .ToList()
-            });
-
-            rules.AddRange(derivedCharacters.Select(derived => new DictionaryRule
-            {
-                Source = derived,
-                Candidates =
-                [
-                    new ReplacementCandidate
-                    {
-                        Text = family.Base,
-                        Type = ReplacementType.RemoveRadical,
-                        Weight = family.Weight
-                    }
-                ]
-            }));
-        }
-
-        return rules;
     }
 
     private IReadOnlyList<DictionaryRule> ReadRules(string json)
@@ -163,24 +100,14 @@ public sealed class DictionaryService
         }
     }
 
-    private static IReadOnlyList<DictionaryRule> MergeRules(IEnumerable<DictionaryRule> rules)
+    private static IReadOnlyList<DictionaryRule> OverrideRules(IEnumerable<DictionaryRule> rules)
     {
-        return rules
-            .GroupBy(rule => rule.Source, StringComparer.Ordinal)
-            .Select(group => new DictionaryRule
-            {
-                Source = group.Key,
-                Candidates = group
-                    .SelectMany(rule => rule.Candidates)
-                    .GroupBy(candidate => (candidate.Text, candidate.Type))
-                    .Select(candidateGroup => new ReplacementCandidate
-                    {
-                        Text = candidateGroup.Key.Text,
-                        Type = candidateGroup.Key.Type,
-                        Weight = candidateGroup.Sum(candidate => candidate.Weight)
-                    })
-                    .ToList()
-            })
-            .ToList();
+        var rulesBySource = new Dictionary<string, DictionaryRule>(StringComparer.Ordinal);
+        foreach (var rule in rules)
+        {
+            rulesBySource[rule.Source] = rule;
+        }
+
+        return rulesBySource.Values.ToList();
     }
 }

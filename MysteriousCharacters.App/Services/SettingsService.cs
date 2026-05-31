@@ -1,6 +1,5 @@
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using MysteriousCharacters.App.Models;
 
 namespace MysteriousCharacters.App.Services;
@@ -10,13 +9,12 @@ public sealed class SettingsService
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() }
+        WriteIndented = true
     };
 
-    public SettingsService()
+    public SettingsService(string? dataDirectory = null)
     {
-        DataDirectory = Path.Combine(
+        DataDirectory = dataDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "MysteriousCharacters");
         SettingsPath = Path.Combine(DataDirectory, "settings.json");
@@ -58,14 +56,6 @@ public sealed class SettingsService
 
     private static void Normalize(AppSettings settings)
     {
-        settings.Hotkey ??= new HotkeyGesture();
-        settings.BlacklistedProcesses ??= [];
-        settings.BlacklistedProcesses = settings.BlacklistedProcesses
-            .Select(NormalizeProcessName)
-            .Where(name => !string.IsNullOrWhiteSpace(name))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
         settings.CopyTimeoutMilliseconds = Math.Clamp(settings.CopyTimeoutMilliseconds, 300, 3000);
         settings.CopyRetryCount = Math.Clamp(settings.CopyRetryCount, 1, 4);
         settings.ModifierReleaseTimeoutMilliseconds = Math.Clamp(

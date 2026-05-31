@@ -3,9 +3,11 @@
   "sources_with_radical_candidates": 2116,
   "sources_with_homophone_candidates": 3467,
   "sources_with_similar_candidates": 3324,
+  "candidate_pool_size": 33116,
+  "sources_with_filtered_misleading_candidates": 12,
   "sources_with_remove_radical_candidates": 1448,
   "sources_with_curated_fallback": 2,
   "common_characters": 3500,
   "generated_rules": 3500,
-  "generated_candidates": 33133
+  "generated_candidates": 3500
 }

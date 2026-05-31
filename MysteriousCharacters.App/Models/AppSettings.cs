@@ -4,8 +4,6 @@ public sealed class AppSettings
 {
     public bool Enabled { get; set; } = true;
 
-    public HotkeyGesture Hotkey { get; set; } = new();
-
     public bool RestoreClipboard { get; set; } = true;
 
     public bool ShowNotifications { get; set; } = true;
@@ -20,15 +18,4 @@ public sealed class AppSettings
 
     public string? CustomDictionaryPath { get; set; }
 
-    public List<string> BlacklistedProcesses { get; set; } =
-    [
-        "1Password",
-        "Bitwarden",
-        "CredentialUIBroker",
-        "KeePass",
-        "KeePassXC",
-        "LockApp",
-        "LogonUI",
-        "mstsc"
-    ];
 }

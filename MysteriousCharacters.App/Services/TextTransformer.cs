@@ -5,38 +5,58 @@ namespace MysteriousCharacters.App.Services;
 
 public sealed class TextTransformer
 {
-    private Dictionary<string, IReadOnlyList<ReplacementCandidate>> _rules = [];
+    private Dictionary<string, string> _encodeRules = [];
+    private Dictionary<string, string> _decodeRules = [];
 
     public TextTransformer(IReadOnlyList<DictionaryRule> rules)
     {
         ReplaceRules(rules);
     }
 
-    public int RuleCount => _rules.Count;
+    public int RuleCount => _encodeRules.Count;
+
+    public int DecodeRuleCount => _decodeRules.Count;
 
     public void ReplaceRules(IReadOnlyList<DictionaryRule> rules)
     {
-        _rules = rules.ToDictionary(
-            rule => rule.Source,
-            rule => (IReadOnlyList<ReplacementCandidate>)rule.Candidates,
+        var mappings = rules
+            .Select(rule => new
+            {
+                rule.Source,
+                Candidate = PickPreferred(rule.Candidates)
+            })
+            .Where(mapping => mapping.Candidate is not null)
+            .ToList();
+
+        _encodeRules = mappings.ToDictionary(
+            mapping => mapping.Source,
+            mapping => mapping.Candidate!.Text,
             StringComparer.Ordinal);
+
+        // Plain Han-character substitutions cannot always be reversed without
+        // ambiguity. Prefer structural relationships when several sources
+        // produce the same encoded character.
+        _decodeRules = mappings
+            .GroupBy(mapping => mapping.Candidate!.Text, StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .OrderBy(mapping => GetPriority(mapping.Candidate!.Type))
+                    .ThenByDescending(mapping => mapping.Candidate!.Weight)
+                    .Select(mapping => mapping.Source)
+                    .First(),
+                StringComparer.Ordinal);
     }
 
-    public string Transform(string text)
+    public string Transform(string text, TransformDirection direction = TransformDirection.Encode)
     {
+        var rules = direction == TransformDirection.Encode ? _encodeRules : _decodeRules;
         var builder = new StringBuilder(text.Length);
 
         foreach (var rune in text.EnumerateRunes())
         {
             var element = rune.ToString();
-            if (_rules.TryGetValue(element, out var candidates))
-            {
-                builder.Append(PickPreferred(candidates)?.Text ?? element);
-            }
-            else
-            {
-                builder.Append(element);
-            }
+            builder.Append(rules.GetValueOrDefault(element, element));
         }
 
         return builder.ToString();
@@ -55,50 +75,27 @@ public sealed class TextTransformer
 
     private static ReplacementCandidate? PickPreferred(IReadOnlyList<ReplacementCandidate> candidates)
     {
-        var addRadicalCandidates = candidates
-            .Where(candidate => candidate.Type == ReplacementType.AddRadical)
-            .ToList();
-        if (addRadicalCandidates.Count > 0)
-        {
-            return PickWeighted(addRadicalCandidates);
-        }
-
-        var removeRadicalCandidates = candidates
-            .Where(candidate => candidate.Type == ReplacementType.RemoveRadical)
-            .ToList();
-        if (removeRadicalCandidates.Count > 0)
-        {
-            return PickWeighted(removeRadicalCandidates);
-        }
-
-        var homophoneCandidates = candidates
-            .Where(candidate => candidate.Type == ReplacementType.Homophone)
-            .ToList();
-        if (homophoneCandidates.Count > 0)
-        {
-            return PickWeighted(homophoneCandidates);
-        }
-
-        var similarCandidates = candidates
-            .Where(candidate => candidate.Type == ReplacementType.Similar)
-            .ToList();
-        return similarCandidates.Count > 0 ? PickWeighted(similarCandidates) : null;
+        return candidates
+            .OrderBy(candidate => GetPriority(candidate.Type))
+            .ThenByDescending(candidate => candidate.Weight)
+            .FirstOrDefault();
     }
 
-    private static ReplacementCandidate PickWeighted(IReadOnlyList<ReplacementCandidate> candidates)
+    private static int GetPriority(ReplacementType type)
     {
-        var totalWeight = candidates.Sum(candidate => candidate.Weight);
-        var selectedWeight = Random.Shared.Next(totalWeight);
-
-        foreach (var candidate in candidates)
+        return type switch
         {
-            selectedWeight -= candidate.Weight;
-            if (selectedWeight < 0)
-            {
-                return candidate;
-            }
-        }
-
-        return candidates[^1];
+            ReplacementType.AddRadical => 0,
+            ReplacementType.RemoveRadical => 1,
+            ReplacementType.Homophone => 2,
+            ReplacementType.Similar => 3,
+            _ => int.MaxValue
+        };
     }
+}
+
+public enum TransformDirection
+{
+    Encode,
+    Decode
 }

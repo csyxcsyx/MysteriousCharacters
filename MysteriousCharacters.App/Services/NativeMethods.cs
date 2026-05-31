@@ -5,6 +5,9 @@ namespace MysteriousCharacters.App.Services;
 internal static class NativeMethods
 {
     public const int WmHotkey = 0x0312;
+    public const uint ModAlt = 0x0001;
+    public const uint ModControl = 0x0002;
+    public const uint ModShift = 0x0004;
     public const uint ModNoRepeat = 0x4000;
     public const uint InputKeyboard = 1;
     public const uint KeyEventKeyUp = 0x0002;

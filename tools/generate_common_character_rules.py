@@ -26,6 +26,20 @@ CURATED_READABLE_FALLBACKS = {
     "嫩": ("嫰", "Similar"),
     "囊": ("馕", "AddRadical"),
 }
+MISLEADING_EQUIVALENT_GROUPS = [
+    "你您",
+    "他她它",
+    "的地得",
+    "在再",
+    "做作",
+    "以已",
+]
+MISLEADING_EQUIVALENT_PAIRS = {
+    frozenset((left, right))
+    for group in MISLEADING_EQUIVALENT_GROUPS
+    for index, left in enumerate(group)
+    for right in group[index + 1 :]
+}
 
 # Radical variants are normalized to a familiar standalone Chinese character
 # when possible. Candidates still have to belong to the supplied common table.
@@ -293,6 +307,17 @@ def add_candidates(
             existing.add(key)
 
 
+def remove_misleading_candidates(
+    source: str,
+    candidates: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    return [
+        candidate
+        for candidate in candidates
+        if frozenset((source, str(candidate["text"]))) not in MISLEADING_EQUIVALENT_PAIRS
+    ]
+
+
 def build_rules(
     common_characters: list[str],
     components_by_character: dict[str, set[str]],
@@ -375,6 +400,11 @@ def build_rules(
         if similar:
             statistics["sources_with_similar_candidates"] += 1
 
+        filtered_candidates = remove_misleading_candidates(source, candidates)
+        if len(filtered_candidates) != len(candidates):
+            statistics["sources_with_filtered_misleading_candidates"] += 1
+        candidates = filtered_candidates
+
         if not candidates:
             fallback_rule = CURATED_READABLE_FALLBACKS.get(source)
             if fallback_rule is None:
@@ -383,7 +413,8 @@ def build_rules(
             add_candidates(candidates, [fallback], replacement_type, 1)
             statistics["sources_with_curated_fallback"] += 1
 
-        rules.append({"source": source, "candidates": candidates})
+        statistics["candidate_pool_size"] += len(candidates)
+        rules.append({"source": source, "candidates": candidates[:1]})
 
     statistics["common_characters"] = len(common_characters)
     statistics["generated_rules"] = len(rules)

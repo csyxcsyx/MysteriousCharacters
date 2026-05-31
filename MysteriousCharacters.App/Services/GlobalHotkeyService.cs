@@ -1,16 +1,17 @@
-using System.Windows.Input;
 using System.Windows.Interop;
-using MysteriousCharacters.App.Models;
 
 namespace MysteriousCharacters.App.Services;
 
 public sealed class GlobalHotkeyService : IDisposable
 {
-    private const int HotkeyId = 0x4D43;
+    private const int EncodeHotkeyId = 0x4D43;
+    private const int DecodeHotkeyId = 0x4D44;
+    private const uint EncodeVirtualKey = 0x45;
+    private const uint DecodeVirtualKey = 0x44;
 
     private readonly IntPtr _windowHandle;
     private readonly HwndSource _source;
-    private HotkeyGesture? _registeredGesture;
+    private bool _registered;
     private bool _disposed;
 
     public GlobalHotkeyService(IntPtr windowHandle)
@@ -21,32 +22,30 @@ public sealed class GlobalHotkeyService : IDisposable
         _source.AddHook(WindowProcedure);
     }
 
-    public event EventHandler? Pressed;
+    public event Action<TransformDirection>? Pressed;
 
-    public bool TryRegister(HotkeyGesture gesture)
+    public bool TryRegister()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (_registeredGesture?.Equals(gesture) == true)
+        if (_registered)
         {
             return true;
         }
 
-        var previous = _registeredGesture;
-        UnregisterCurrent();
-
-        if (Register(gesture))
+        if (!Register(EncodeHotkeyId, EncodeVirtualKey))
         {
-            _registeredGesture = gesture;
-            return true;
+            return false;
         }
 
-        if (previous is not null && Register(previous))
+        if (!Register(DecodeHotkeyId, DecodeVirtualKey))
         {
-            _registeredGesture = previous;
+            NativeMethods.UnregisterHotKey(_windowHandle, EncodeHotkeyId);
+            return false;
         }
 
-        return false;
+        _registered = true;
+        return true;
     }
 
     public void Dispose()
@@ -61,22 +60,26 @@ public sealed class GlobalHotkeyService : IDisposable
         _disposed = true;
     }
 
-    private bool Register(HotkeyGesture gesture)
+    private bool Register(int id, uint virtualKey)
     {
-        var virtualKey = (uint)KeyInterop.VirtualKeyFromKey(gesture.Key);
-        var modifiers = (uint)gesture.Modifiers | NativeMethods.ModNoRepeat;
-        return NativeMethods.RegisterHotKey(_windowHandle, HotkeyId, modifiers, virtualKey);
+        var modifiers =
+            NativeMethods.ModControl |
+            NativeMethods.ModAlt |
+            NativeMethods.ModShift |
+            NativeMethods.ModNoRepeat;
+        return NativeMethods.RegisterHotKey(_windowHandle, id, modifiers, virtualKey);
     }
 
     private void UnregisterCurrent()
     {
-        if (_registeredGesture is null)
+        if (!_registered)
         {
             return;
         }
 
-        NativeMethods.UnregisterHotKey(_windowHandle, HotkeyId);
-        _registeredGesture = null;
+        NativeMethods.UnregisterHotKey(_windowHandle, EncodeHotkeyId);
+        NativeMethods.UnregisterHotKey(_windowHandle, DecodeHotkeyId);
+        _registered = false;
     }
 
     private IntPtr WindowProcedure(
@@ -86,10 +89,21 @@ public sealed class GlobalHotkeyService : IDisposable
         IntPtr longParameter,
         ref bool handled)
     {
-        if (message == NativeMethods.WmHotkey && wordParameter.ToInt32() == HotkeyId)
+        if (message != NativeMethods.WmHotkey)
+        {
+            return IntPtr.Zero;
+        }
+
+        var direction = wordParameter.ToInt32() switch
+        {
+            EncodeHotkeyId => TransformDirection.Encode,
+            DecodeHotkeyId => TransformDirection.Decode,
+            _ => (TransformDirection?)null
+        };
+        if (direction is not null)
         {
             handled = true;
-            Pressed?.Invoke(this, EventArgs.Empty);
+            Pressed?.Invoke(direction.Value);
         }
 
         return IntPtr.Zero;

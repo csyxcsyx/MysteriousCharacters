@@ -7,22 +7,6 @@ public sealed class DictionaryDocument
     public List<DictionaryRule> Rules { get; set; } = [];
 }
 
-public sealed class RadicalFamilyDocument
-{
-    public int Version { get; set; } = 1;
-
-    public List<RadicalFamily> Families { get; set; } = [];
-}
-
-public sealed class RadicalFamily
-{
-    public string Base { get; set; } = string.Empty;
-
-    public List<string> Derived { get; set; } = [];
-
-    public int Weight { get; set; } = 10;
-}
-
 public sealed class DictionaryRule
 {
     public string Source { get; set; } = string.Empty;

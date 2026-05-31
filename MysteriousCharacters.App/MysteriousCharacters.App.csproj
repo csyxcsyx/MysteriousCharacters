@@ -14,10 +14,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\default-dictionary.json"
-                      LogicalName="default-dictionary.json" />
-    <EmbeddedResource Include="Resources\radical-families.json"
-                      LogicalName="radical-families.json" />
     <EmbeddedResource Include="Resources\common-character-rules.json"
                       LogicalName="common-character-rules.json" />
     <Resource Include="Resources\AppIcon.ico" />

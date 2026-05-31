@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Interop;
 using MysteriousCharacters.App.Models;
 using MysteriousCharacters.App.Services;
@@ -13,15 +12,6 @@ namespace MysteriousCharacters.App;
 
 public partial class MainWindow : System.Windows.Window
 {
-    private static readonly IReadOnlyList<Key> SupportedHotkeyKeys =
-    [
-        Key.A, Key.B, Key.C, Key.D, Key.E, Key.F, Key.G, Key.H, Key.I, Key.J, Key.K, Key.L, Key.M,
-        Key.N, Key.O, Key.P, Key.Q, Key.R, Key.S, Key.T, Key.U, Key.V, Key.W, Key.X, Key.Y, Key.Z,
-        Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9,
-        Key.F1, Key.F2, Key.F3, Key.F4, Key.F5, Key.F6, Key.F7, Key.F8, Key.F9, Key.F10, Key.F11,
-        Key.F12
-    ];
-
     private readonly SettingsService _settingsService;
     private readonly DictionaryService _dictionaryService;
     private readonly TextTransformer _transformer;
@@ -44,11 +34,9 @@ public partial class MainWindow : System.Windows.Window
             Notify);
 
         InitializeComponent();
-        HotkeyKeyComboBox.ItemsSource = SupportedHotkeyKeys;
         ApplySettingsToControls();
 
         Closing += MainWindow_OnClosing;
-        StateChanged += MainWindow_OnStateChanged;
     }
 
     public void InitializeRuntime()
@@ -57,17 +45,17 @@ public partial class MainWindow : System.Windows.Window
         _hotkeyService = new GlobalHotkeyService(windowHandle);
         _hotkeyService.Pressed += HotkeyService_OnPressed;
 
-        var registered = _hotkeyService.TryRegister(_settings.Hotkey);
+        var registered = _hotkeyService.TryRegister();
         _trayIconService = new TrayIconService(
             () => _settings,
             SetEnabledFromTray,
             OpenSettings,
             ExitApplication);
 
-        SetStatus($"已加载 {_transformer.RuleCount} 条汉字转换规则，无法可靠转换的字将保持原样。");
+        SetStatus($"READY · 已加载 {_transformer.RuleCount} 条固定映射，可尝试还原 {_transformer.DecodeRuleCount} 种密文字。");
         if (!registered)
         {
-            Notify("快捷键注册失败", $"快捷键 {_settings.Hotkey} 已被其他程序占用，请打开设置修改。");
+            Notify("快捷键注册失败", "固定快捷键已被其他程序占用，请关闭占用快捷键的软件后重新启动。");
             OpenSettings();
         }
     }
@@ -83,39 +71,27 @@ public partial class MainWindow : System.Windows.Window
         });
     }
 
-    private async void HotkeyService_OnPressed(object? sender, EventArgs e)
+    private async void HotkeyService_OnPressed(TransformDirection direction)
     {
-        await _coordinator.TryReplaceSelectionAsync();
+        await _coordinator.TryReplaceSelectionAsync(direction);
     }
 
     private void SaveButton_OnClick(object sender, RoutedEventArgs e)
     {
-        var candidate = ReadSettingsFromControls();
-        if (candidate is null)
-        {
-            return;
-        }
-
-        if (_hotkeyService is not null && !_hotkeyService.TryRegister(candidate.Hotkey))
-        {
-            WpfMessageBox.Show(
-                this,
-                $"快捷键 {candidate.Hotkey} 已被其他程序占用，请换一个组合。",
-                "快捷键冲突",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            return;
-        }
-
-        _settings = candidate;
+        _settings = ReadSettingsFromControls();
         SaveCurrentSettings();
         _trayIconService?.Refresh();
-        SetStatus("设置已保存。智能混合策略和 100% 替换已启用。");
+        SetStatus("SAVED · 设置已保存。");
     }
 
     private void HideButton_OnClick(object sender, RoutedEventArgs e)
     {
         Hide();
+    }
+
+    private void ExitButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ExitApplication();
     }
 
     private void ImportDictionaryButton_OnClick(object sender, RoutedEventArgs e)
@@ -138,7 +114,7 @@ public partial class MainWindow : System.Windows.Window
             ReloadDictionary();
             SaveCurrentSettings();
             ApplySettingsToControls();
-            SetStatus($"已导入 {importedCount} 条自定义规则，精细规则合计 {_transformer.RuleCount} 条。");
+            SetStatus($"IMPORTED · 已导入 {importedCount} 条自定义规则，固定映射合计 {_transformer.RuleCount} 条。");
         }
         catch (Exception exception)
         {
@@ -156,7 +132,7 @@ public partial class MainWindow : System.Windows.Window
         try
         {
             ReloadDictionary();
-            SetStatus($"词典已重新加载，共 {_transformer.RuleCount} 条精细规则。");
+            SetStatus($"RELOADED · 词典已重新加载，共 {_transformer.RuleCount} 条固定映射。");
         }
         catch (Exception exception)
         {
@@ -179,57 +155,28 @@ public partial class MainWindow : System.Windows.Window
         });
     }
 
-    private AppSettings? ReadSettingsFromControls()
+    private AppSettings ReadSettingsFromControls()
     {
-        var modifiers = HotkeyModifiers.None;
-        modifiers |= CtrlCheckBox.IsChecked == true ? HotkeyModifiers.Ctrl : HotkeyModifiers.None;
-        modifiers |= AltCheckBox.IsChecked == true ? HotkeyModifiers.Alt : HotkeyModifiers.None;
-        modifiers |= ShiftCheckBox.IsChecked == true ? HotkeyModifiers.Shift : HotkeyModifiers.None;
-        modifiers |= WinCheckBox.IsChecked == true ? HotkeyModifiers.Win : HotkeyModifiers.None;
-
-        if (modifiers == HotkeyModifiers.None)
-        {
-            WpfMessageBox.Show(
-                this,
-                "快捷键至少需要一个修饰键，例如 Ctrl 或 Alt。",
-                "快捷键无效",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            return null;
-        }
-
-        var selectedKey = HotkeyKeyComboBox.SelectedItem is Key key ? key : Key.E;
-
         return new AppSettings
         {
             Enabled = EnabledCheckBox.IsChecked == true,
-            Hotkey = new HotkeyGesture { Modifiers = modifiers, Key = selectedKey },
             RestoreClipboard = RestoreClipboardCheckBox.IsChecked == true,
             ShowNotifications = ShowNotificationsCheckBox.IsChecked == true,
             CopyTimeoutMilliseconds = _settings.CopyTimeoutMilliseconds,
             CopyRetryCount = _settings.CopyRetryCount,
             ModifierReleaseTimeoutMilliseconds = _settings.ModifierReleaseTimeoutMilliseconds,
             ClipboardRestoreDelayMilliseconds = _settings.ClipboardRestoreDelayMilliseconds,
-            CustomDictionaryPath = _settings.CustomDictionaryPath,
-            BlacklistedProcesses = BlacklistTextBox.Text
-                .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .ToList()
+            CustomDictionaryPath = _settings.CustomDictionaryPath
         };
     }
 
     private void ApplySettingsToControls()
     {
         EnabledCheckBox.IsChecked = _settings.Enabled;
-        CtrlCheckBox.IsChecked = _settings.Hotkey.Modifiers.HasFlag(HotkeyModifiers.Ctrl);
-        AltCheckBox.IsChecked = _settings.Hotkey.Modifiers.HasFlag(HotkeyModifiers.Alt);
-        ShiftCheckBox.IsChecked = _settings.Hotkey.Modifiers.HasFlag(HotkeyModifiers.Shift);
-        WinCheckBox.IsChecked = _settings.Hotkey.Modifiers.HasFlag(HotkeyModifiers.Win);
-        HotkeyKeyComboBox.SelectedItem = _settings.Hotkey.Key;
         RestoreClipboardCheckBox.IsChecked = _settings.RestoreClipboard;
         ShowNotificationsCheckBox.IsChecked = _settings.ShowNotifications;
-        BlacklistTextBox.Text = string.Join(Environment.NewLine, _settings.BlacklistedProcesses);
         DictionaryPathTextBlock.Text = string.IsNullOrWhiteSpace(_settings.CustomDictionaryPath)
-            ? "当前使用 3500 个常用字规则、内置汉字词典和偏旁家族库。无法可靠转换的非常用字会保持原样。"
+            ? "BUILT-IN · 当前使用 3500 个一级常用字固定映射。无法可靠转换的非常用字会保持原样。"
             : $"当前自定义词典：{_settings.CustomDictionaryPath}";
     }
 
@@ -240,7 +187,7 @@ public partial class MainWindow : System.Windows.Window
             _settings.Enabled = enabled;
             SaveCurrentSettings();
             ApplySettingsToControls();
-            SetStatus(enabled ? "快捷键转换已开启。" : "快捷键转换已暂停。");
+            SetStatus(enabled ? "RUNNING · 快捷键转换与尝试还原已开启。" : "PAUSED · 快捷键响应已暂停。");
         });
     }
 
@@ -299,13 +246,5 @@ public partial class MainWindow : System.Windows.Window
 
         e.Cancel = true;
         Hide();
-    }
-
-    private void MainWindow_OnStateChanged(object? sender, EventArgs e)
-    {
-        if (WindowState == WindowState.Minimized)
-        {
-            Hide();
-        }
     }
 }

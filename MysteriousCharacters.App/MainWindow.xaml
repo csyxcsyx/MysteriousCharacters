@@ -1,79 +1,91 @@
 <Window x:Class="MysteriousCharacters.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="隐文匣 - 设置"
+        Title="隐文匣 v1.0 · Local Text Codec"
         Icon="Resources/AppIcon.ico"
-        Width="700"
+        Width="860"
         Height="760"
-        MinWidth="640"
+        MinWidth="760"
         MinHeight="680"
-        Background="#F4FBF7"
+        Background="#F1F9F4"
+        FontFamily="Segoe UI Variable Text, Microsoft YaHei UI"
+        TextOptions.TextFormattingMode="Display"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <SolidColorBrush x:Key="MintDark" Color="#287553" />
-        <SolidColorBrush x:Key="Mint" Color="#4FAE7C" />
-        <SolidColorBrush x:Key="MintLight" Color="#E7F7EE" />
-        <SolidColorBrush x:Key="TextPrimary" Color="#244436" />
-        <SolidColorBrush x:Key="TextMuted" Color="#698075" />
-        <Style x:Key="SectionCard" TargetType="Border">
-            <Setter Property="Margin" Value="0,0,0,12" />
-            <Setter Property="Padding" Value="18,14" />
-            <Setter Property="Background" Value="White" />
-            <Setter Property="BorderBrush" Value="#D9ECE1" />
+        <SolidColorBrush x:Key="Ink" Color="#183C32" />
+        <SolidColorBrush x:Key="InkSoft" Color="#57756B" />
+        <SolidColorBrush x:Key="Mint" Color="#49B884" />
+        <SolidColorBrush x:Key="MintDark" Color="#23724F" />
+        <SolidColorBrush x:Key="MintPale" Color="#E5F7EC" />
+        <SolidColorBrush x:Key="Line" Color="#CDE6D7" />
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+        </Style>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="#FCFFFD" />
+            <Setter Property="BorderBrush" Value="{StaticResource Line}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="18" />
+        </Style>
+        <Style x:Key="SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{StaticResource MintDark}" />
         </Style>
         <Style x:Key="SectionTitle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource MintDark}" />
-            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Margin" Value="0,5,0,5" />
+            <Setter Property="FontSize" Value="17" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
         </Style>
-        <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        <Style x:Key="BodyMuted" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource InkSoft}" />
+            <Setter Property="LineHeight" Value="21" />
+            <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
         <Style TargetType="CheckBox">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
-            <Setter Property="Margin" Value="0,4,14,4" />
-        </Style>
-        <Style TargetType="ComboBox">
-            <Setter Property="Padding" Value="8,5" />
-            <Setter Property="BorderBrush" Value="#C7E2D3" />
-            <Setter Property="Background" Value="White" />
-        </Style>
-        <Style TargetType="TextBox">
-            <Setter Property="Padding" Value="9,7" />
-            <Setter Property="BorderBrush" Value="#C7E2D3" />
-            <Setter Property="Background" Value="#FBFEFC" />
+            <Setter Property="Margin" Value="0,5,0,5" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="FontSize" Value="13" />
         </Style>
         <Style TargetType="Button">
+            <Setter Property="Padding" Value="15,8" />
+            <Setter Property="Margin" Value="0,0,9,0" />
             <Setter Property="Foreground" Value="White" />
-            <Setter Property="Background" Value="{StaticResource Mint}" />
+            <Setter Property="Background" Value="{StaticResource MintDark}" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="14,7" />
-            <Setter Property="Margin" Value="0,0,8,0" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder"
+                        <Border x:Name="Surface"
                                 Padding="{TemplateBinding Padding}"
                                 Background="{TemplateBinding Background}"
-                                CornerRadius="7">
+                                CornerRadius="8">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#3D9668" />
+                                <Setter TargetName="Surface" Property="Opacity" Value="0.86" />
                             </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.55" />
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Surface" Property="Opacity" Value="0.7" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+        <Style x:Key="GhostButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Foreground" Value="{StaticResource MintDark}" />
+            <Setter Property="Background" Value="#E5F7EC" />
+        </Style>
+        <Style x:Key="ExitButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Foreground" Value="#91513D" />
+            <Setter Property="Background" Value="#FCEEE8" />
         </Style>
     </Window.Resources>
 
@@ -84,105 +96,219 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border Padding="22,17" Background="#DFF5E8" BorderBrush="#C8E8D6" BorderThickness="0,0,0,1">
+        <Border Padding="26,22" Background="#173F35">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="244" />
                 </Grid.ColumnDefinitions>
-                <Border Width="50"
-                        Height="50"
-                        Background="{StaticResource Mint}"
-                        CornerRadius="14">
-                    <TextBlock HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               Foreground="White"
-                               FontSize="25"
-                               FontWeight="SemiBold"
-                               Text="匣" />
-                </Border>
-                <StackPanel Grid.Column="1" Margin="14,2,0,0">
-                    <TextBlock Foreground="{StaticResource MintDark}"
-                               FontSize="23"
-                               FontWeight="SemiBold"
-                               Text="隐文匣" />
-                    <TextBlock Margin="0,4,0,0"
-                               Foreground="{StaticResource TextMuted}"
-                               Text="选中文字，按下快捷键，在当前输入框中完成本地文字变换。" />
+                <StackPanel>
+                    <TextBlock FontFamily="Cascadia Mono, Consolas"
+                               FontSize="11"
+                               Foreground="#8BE3B7"
+                               Text="&gt; LOCAL_TEXT_CODEC / ONLINE" />
+                    <Grid Margin="0,8,0,0" HorizontalAlignment="Left">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock FontSize="30"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"
+                                   Text="隐文匣" />
+                        <Border Grid.Column="1"
+                                Width="42"
+                                Height="22"
+                                Margin="10,0,0,0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Background="#2B755F"
+                                CornerRadius="7">
+                            <TextBlock FontFamily="Cascadia Mono, Consolas"
+                                       FontSize="10"
+                                       Foreground="#D6FFEA"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
+                                       Text="v1.0" />
+                        </Border>
+                    </Grid>
+                    <TextBlock Margin="0,8,12,0"
+                               FontSize="13"
+                               Foreground="#C8EBDD"
+                               TextWrapping="Wrap"
+                               Text="本地汉字固定映射工具。选中文字，在当前输入框中完成转换或尝试还原。" />
                 </StackPanel>
+                <Border Grid.Column="1"
+                        Padding="14,11"
+                        Background="#214E43"
+                        BorderBrush="#397461"
+                        BorderThickness="1"
+                        CornerRadius="10">
+                    <StackPanel>
+                        <TextBlock FontFamily="Cascadia Mono, Consolas"
+                                   FontSize="11"
+                                   Foreground="#8BE3B7"
+                                   Text="codec.status" />
+                        <TextBlock Margin="0,5,0,0"
+                                   FontFamily="Cascadia Mono, Consolas"
+                                   FontSize="12"
+                                   Foreground="White"
+                                   Text="mode = fixed_mapping" />
+                        <TextBlock Margin="0,4,0,0"
+                                   FontFamily="Cascadia Mono, Consolas"
+                                   FontSize="12"
+                                   Foreground="White"
+                                   Text="network = offline" />
+                        <TextBlock Margin="0,4,0,0"
+                                   FontFamily="Cascadia Mono, Consolas"
+                                   FontSize="12"
+                                   Foreground="White"
+                                   Text="privacy = local_only" />
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="20,16,20,8">
-                <Border Style="{StaticResource SectionCard}">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="运行状态" />
-                        <CheckBox x:Name="EnabledCheckBox" Content="开启快捷键转换" />
-                        <TextBlock Margin="0,5,0,0"
-                                   Foreground="{StaticResource TextMuted}"
-                                   Text="程序驻留在系统托盘中。关闭设置窗口不会退出程序。" />
-                    </StackPanel>
+            <StackPanel Margin="22,18,22,10">
+                <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="14" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="01 / QUICK_START" />
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="两步开始使用" />
+                            <TextBlock Style="{StaticResource BodyMuted}"
+                                       Text="1. 在任意普通输入框中选中文字。&#x0a;2. 按下对应快捷键，替换会在原位置完成。" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="02 / RUNTIME" />
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="运行状态" />
+                            <CheckBox x:Name="EnabledCheckBox" Content="启用全局快捷键响应" />
+                            <TextBlock Style="{StaticResource BodyMuted}"
+                                       Text="最小化后窗口会保留在任务栏。关闭窗口后程序继续驻留托盘，双击托盘图标可再次打开。" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Margin="0,0,0,14" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="184" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="03 / HOTKEYS" />
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="快捷键" />
+                            <TextBlock Style="{StaticResource BodyMuted}"
+                                       Text="程序使用两组固定快捷键，便于记忆并降低误触概率。" />
+                        </StackPanel>
+                        <Grid Grid.Column="1" Margin="18,0,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="10" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Padding="14,10" Background="#EAF8EF" CornerRadius="9">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="SemiBold" Text="转换为隐文" />
+                                        <TextBlock Margin="0,3,0,0"
+                                                   Foreground="{StaticResource InkSoft}"
+                                                   Text="每个常用汉字固定对应一个目标字" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1"
+                                               VerticalAlignment="Center"
+                                               FontFamily="Cascadia Mono, Consolas"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource MintDark}"
+                                               Text="CTRL + ALT + SHIFT + E" />
+                                </Grid>
+                            </Border>
+                            <Border Grid.Row="2" Padding="14,10" Background="#EAF8EF" CornerRadius="9">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="SemiBold" Text="尝试还原原文" />
+                                        <TextBlock Margin="0,3,0,0"
+                                                   Foreground="{StaticResource InkSoft}"
+                                                   Text="按反向映射恢复最可能的原字" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1"
+                                               VerticalAlignment="Center"
+                                               FontFamily="Cascadia Mono, Consolas"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource MintDark}"
+                                               Text="CTRL + ALT + SHIFT + D" />
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
                 </Border>
 
-                <Border Style="{StaticResource SectionCard}">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="快捷键" />
-                        <WrapPanel>
-                            <CheckBox x:Name="CtrlCheckBox" Content="Ctrl" />
-                            <CheckBox x:Name="AltCheckBox" Content="Alt" />
-                            <CheckBox x:Name="ShiftCheckBox" Content="Shift" />
-                            <CheckBox x:Name="WinCheckBox" Content="Win" />
-                            <ComboBox x:Name="HotkeyKeyComboBox" Width="106" Margin="4,0,0,0" />
-                        </WrapPanel>
-                        <TextBlock Margin="0,6,0,0"
-                                   Foreground="{StaticResource TextMuted}"
-                                   Text="默认快捷键为 Ctrl + Alt + E。保存时会检查快捷键冲突。" />
-                    </StackPanel>
-                </Border>
+                <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="14" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="04 / CODEC" />
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="转换说明" />
+                            <TextBlock Style="{StaticResource BodyMuted}"
+                                       Text="常用汉字采用稳定的一对一转换规则。同一个汉字每次都会得到相同结果，并优先选择容易辨认的偏旁关系、同音字和形近字。" />
+                            <Border Margin="0,10,0,0" Padding="10,8" Background="#FFF8DC" CornerRadius="7">
+                                <TextBlock Foreground="#735D21"
+                                           TextWrapping="Wrap"
+                                           Text="提示：这是可读性文字变换，不是密码学加密。多个原字可能对应同一密文字，因此还原结果是“最可能原文”。" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SectionLabel}" Text="05 / PREFERENCES" />
+                            <TextBlock Style="{StaticResource SectionTitle}" Text="剪贴板与提示" />
+                            <CheckBox x:Name="RestoreClipboardCheckBox"
+                                      Content="替换完成后尽量恢复原剪贴板" />
+                            <CheckBox x:Name="ShowNotificationsCheckBox"
+                                      Content="失败或跳过时显示轻量托盘提示" />
+                            <TextBlock Margin="0,7,0,0"
+                                       Style="{StaticResource BodyMuted}"
+                                       Text="密码管理器、登录界面与远程桌面等敏感应用会被内置规则静默跳过。" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
 
-                <Border Style="{StaticResource SectionCard}" Background="#ECF9F1">
+                <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="智能混合策略" />
-                        <TextBlock TextWrapping="Wrap"
-                                   Text="系统内置 3500 个常用字规则并固定使用 100% 替换：优先增删偏旁，其次选择同音字和形近字。无法可靠转换的非常用字会保持原样，输出始终是正常可显示的汉字。" />
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource SectionCard}">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="剪贴板与提示" />
-                        <CheckBox x:Name="RestoreClipboardCheckBox"
-                                  Content="粘贴完成后尽量恢复原剪贴板内容" />
-                        <CheckBox x:Name="ShowNotificationsCheckBox"
-                                  Content="失败或跳过时显示轻量托盘提示" />
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource SectionCard}">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="黑名单应用" />
-                        <TextBlock Margin="0,0,0,7"
-                                   Foreground="{StaticResource TextMuted}"
-                                   Text="每行填写一个进程名，可省略 .exe。命中时快捷键会静默跳过。" />
-                        <TextBox x:Name="BlacklistTextBox"
-                                 Height="102"
-                                 AcceptsReturn="True"
-                                 VerticalScrollBarVisibility="Auto"
-                                 TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource SectionCard}">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="自定义词典" />
+                        <TextBlock Style="{StaticResource SectionLabel}" Text="06 / DICTIONARY" />
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="本地词典" />
                         <TextBlock x:Name="DictionaryPathTextBlock"
-                                   Foreground="{StaticResource TextMuted}"
-                                   TextWrapping="Wrap" />
-                        <WrapPanel Margin="0,9,0,0">
+                                   Style="{StaticResource BodyMuted}" />
+                        <WrapPanel Margin="0,12,0,0">
                             <Button Click="ImportDictionaryButton_OnClick" Content="导入 JSON 词典" />
-                            <Button Click="ReloadDictionaryButton_OnClick" Content="重新加载" />
-                            <Button Click="OpenDataFolderButton_OnClick" Content="打开数据目录" />
+                            <Button Style="{StaticResource GhostButton}"
+                                    Click="ReloadDictionaryButton_OnClick"
+                                    Content="重新加载" />
+                            <Button Style="{StaticResource GhostButton}"
+                                    Click="OpenDataFolderButton_OnClick"
+                                    Content="打开数据目录" />
                         </WrapPanel>
                     </StackPanel>
                 </Border>
@@ -190,9 +316,9 @@
         </ScrollViewer>
 
         <Border Grid.Row="2"
-                Padding="20,12"
-                Background="White"
-                BorderBrush="#D9ECE1"
+                Padding="20,13"
+                Background="#FCFFFD"
+                BorderBrush="{StaticResource Line}"
                 BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -200,12 +326,22 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="StatusTextBlock"
+                           Margin="0,0,16,0"
                            VerticalAlignment="Center"
-                           Foreground="{StaticResource TextMuted}"
-                           Text="准备就绪" />
+                           FontFamily="Cascadia Mono, Consolas"
+                           FontSize="11"
+                           Foreground="{StaticResource InkSoft}"
+                           Text="BOOTING · 正在初始化本地编解码器..." />
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Click="SaveButton_OnClick" Content="保存设置" />
-                    <Button Margin="0" Click="HideButton_OnClick" Content="隐藏到托盘" />
+                    <Button Margin="0"
+                            Style="{StaticResource GhostButton}"
+                            Click="HideButton_OnClick"
+                            Content="隐藏到托盘" />
+                    <Button Margin="9,0,0,0"
+                            Style="{StaticResource ExitButton}"
+                            Click="ExitButton_OnClick"
+                            Content="退出程序" />
                 </StackPanel>
             </Grid>
         </Border>

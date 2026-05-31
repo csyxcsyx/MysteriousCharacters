@@ -5,6 +5,18 @@ namespace MysteriousCharacters.App.Services;
 
 public sealed class TextReplacementCoordinator
 {
+    private static readonly HashSet<string> ProtectedProcessNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "1Password",
+        "Bitwarden",
+        "CredentialUIBroker",
+        "KeePass",
+        "KeePassXC",
+        "LockApp",
+        "LogonUI",
+        "mstsc"
+    };
+
     private readonly ClipboardService _clipboardService;
     private readonly TextTransformer _transformer;
     private readonly Func<AppSettings> _settingsProvider;
@@ -23,7 +35,7 @@ public sealed class TextReplacementCoordinator
         _notify = notify;
     }
 
-    public async Task TryReplaceSelectionAsync()
+    public async Task TryReplaceSelectionAsync(TransformDirection direction)
     {
         if (!await _operationLock.WaitAsync(0))
         {
@@ -39,7 +51,7 @@ public sealed class TextReplacementCoordinator
             }
 
             var foregroundWindow = NativeMethods.GetForegroundWindow();
-            if (foregroundWindow == IntPtr.Zero || IsBlacklisted(foregroundWindow, settings))
+            if (foregroundWindow == IntPtr.Zero || IsProtectedProcess(foregroundWindow))
             {
                 return;
             }
@@ -69,11 +81,15 @@ public sealed class TextReplacementCoordinator
                 return;
             }
 
-            var transformedText = _transformer.Transform(selectedText);
+            var transformedText = _transformer.Transform(selectedText, direction);
             if (string.Equals(selectedText, transformedText, StringComparison.Ordinal))
             {
                 Restore(snapshot);
-                _notify("没有可转换的汉字", "当前选区不包含可处理的汉字或自定义规则。");
+                _notify(
+                    direction == TransformDirection.Encode ? "没有可转换的汉字" : "没有可还原的汉字",
+                    direction == TransformDirection.Encode
+                        ? "当前选区不包含可处理的汉字或自定义规则。"
+                        : "当前选区没有匹配到可尝试还原的文字。");
                 return;
             }
 
@@ -163,14 +179,14 @@ public sealed class TextReplacementCoordinator
         return null;
     }
 
-    private static bool IsBlacklisted(IntPtr foregroundWindow, AppSettings settings)
+    private static bool IsProtectedProcess(IntPtr foregroundWindow)
     {
         try
         {
             NativeMethods.GetWindowThreadProcessId(foregroundWindow, out var processId);
             using var process = Process.GetProcessById((int)processId);
             var processName = SettingsService.NormalizeProcessName(process.ProcessName);
-            return settings.BlacklistedProcesses.Contains(processName, StringComparer.OrdinalIgnoreCase);
+            return ProtectedProcessNames.Contains(processName);
         }
         catch
         {

@@ -16,7 +16,10 @@ var builtInRules = dictionaryService.LoadRules(null);
 var transformer = new TextTransformer(builtInRules);
 
 Assert(transformer.RuleCount >= 3500, "Expected all level-one common characters to be covered.");
+Assert(transformer.DecodeRuleCount >= 1000, "Expected a substantial reverse lookup table.");
+Assert(builtInRules.All(rule => rule.Candidates.Count == 1), "Built-in rules should be compact fixed mappings.");
 Assert(transformer.Transform("ABC 123") == "ABC 123", "Non-Chinese text changed.");
+Assert(transformer.Transform("ABC 123", TransformDirection.Decode) == "ABC 123", "Decoded non-Chinese text changed.");
 
 VerifyReplacement(transformer, "我想吃饭");
 VerifyReplacement(transformer, "马青反");
@@ -24,12 +27,13 @@ VerifyReplacement(transformer, "清吗饭");
 VerifyReplacement(transformer, "未土日");
 VerifyReplacement(transformer, "我看着你的脸，轻刷着和弦；情人节卡片，手写的从前。。。");
 VerifyReplacement(transformer, "一乙二十丁厂七卜八人入儿匕几九刁了刀力乃");
-VerifyNeverProduces(transformer, "天", ["一", "大"]);
-VerifyNeverProduces(transformer, "看", ["手", "目"]);
-VerifyNeverProduces(transformer, "着", ["羊", "目"]);
-VerifyNeverProduces(transformer, "烟", ["火"]);
-VerifyNeverProduces(transformer, "在", ["土", "才"]);
-VerifyNeverProduces(transformer, "等", ["竹"]);
+VerifyDeterministicReplacement(transformer, "天青色等烟雨，而我在等你。");
+VerifyRoundTrip(transformer, "乙八九");
+VerifyNeverProduces(transformer, "你", ["您"]);
+VerifyNeverProduces(transformer, "他", ["她", "它"]);
+VerifyNeverProduces(transformer, "的", ["地", "得"]);
+VerifyNeverProduces(transformer, "在", ["再"]);
+VerifyNeverProduces(transformer, "做", ["作"]);
 VerifyUnmappedCharacterIsPreserved(transformer, "鑫");
 VerifyUnmappedCharacterIsPreserved(transformer, "𠀀");
 VerifyLevelOneCoverage(transformer, commonCharacterTablePath);
@@ -38,6 +42,8 @@ var mergedRules = dictionaryService.LoadRules(exampleDictionaryPath);
 var mergedTransformer = new TextTransformer(mergedRules);
 Assert(mergedTransformer.RuleCount == transformer.RuleCount + 1, "Custom dictionary rule was not merged.");
 VerifyReplacement(mergedTransformer, "鑫");
+VerifyRoundTrip(mergedTransformer, "鑫");
+VerifySettingsPersistence();
 
 Console.WriteLine($"built_in_rules={transformer.RuleCount}");
 Console.WriteLine($"merged_rules={mergedTransformer.RuleCount}");
@@ -64,15 +70,31 @@ static void VerifyUnmappedCharacterIsPreserved(TextTransformer transformer, stri
 static void VerifyNeverProduces(TextTransformer transformer, string source, string[] forbiddenValues)
 {
     var forbidden = forbiddenValues.ToHashSet(StringComparer.Ordinal);
-    for (var index = 0; index < 250; index++)
-    {
-        var transformed = transformer.Transform(source);
-        Assert(
-            !forbidden.Contains(transformed),
-            $"Readability regression: {source}->{transformed}");
-    }
+    var transformed = transformer.Transform(source);
+    Assert(
+        !forbidden.Contains(transformed),
+        $"Misleading replacement regression: {source}->{transformed}");
 
     Console.WriteLine($"readability_checked={source}");
+}
+
+static void VerifyDeterministicReplacement(TextTransformer transformer, string source)
+{
+    var expected = transformer.Transform(source);
+    for (var index = 0; index < 20; index++)
+    {
+        Assert(transformer.Transform(source) == expected, $"Replacement changed between runs: {source}");
+    }
+
+    Console.WriteLine($"deterministic={source}->{expected}");
+}
+
+static void VerifyRoundTrip(TextTransformer transformer, string source)
+{
+    var encoded = transformer.Transform(source);
+    var decoded = transformer.Transform(encoded, TransformDirection.Decode);
+    Assert(decoded == source, $"Expected an exact custom dictionary round trip: {source}->{encoded}->{decoded}");
+    Console.WriteLine($"round_trip={source}->{encoded}->{decoded}");
 }
 
 static void VerifyLevelOneCoverage(TextTransformer transformer, string commonCharacterTablePath)
@@ -98,6 +120,34 @@ static void VerifyLevelOneCoverage(TextTransformer transformer, string commonCha
     }
 
     Console.WriteLine($"level_one_coverage={commonCharacters.Count}/{commonCharacters.Count}");
+}
+
+static void VerifySettingsPersistence()
+{
+    var dataDirectory = Path.Combine(
+        Path.GetTempPath(),
+        $"MysteriousCharacters-SmokeTests-{Guid.NewGuid():N}");
+
+    try
+    {
+        Directory.CreateDirectory(dataDirectory);
+        var settingsService = new SettingsService(dataDirectory);
+        var settings = settingsService.Load();
+        settings.RestoreClipboard = false;
+        settings.ShowNotifications = false;
+        settingsService.Save(settings);
+        var savedSettings = settingsService.Load();
+        Assert(!savedSettings.RestoreClipboard, "Clipboard setting was not persisted.");
+        Assert(!savedSettings.ShowNotifications, "Notification setting was not persisted.");
+        Console.WriteLine("settings_persistence=passed");
+    }
+    finally
+    {
+        if (Directory.Exists(dataDirectory))
+        {
+            Directory.Delete(dataDirectory, true);
+        }
+    }
 }
 
 static void AssertNoStructureSymbols(string text)

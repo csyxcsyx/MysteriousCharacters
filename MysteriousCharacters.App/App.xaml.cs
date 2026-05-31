@@ -1,4 +1,3 @@
-using System.IO;
 using System.Windows;
 using MysteriousCharacters.App.Services;
 
@@ -28,16 +27,11 @@ public partial class App : System.Windows.Application
 
         var settingsService = new SettingsService();
         var dictionaryService = new DictionaryService();
-        var showSettings = !File.Exists(settingsService.SettingsPath) ||
-                           e.Args.Contains("--show-settings", StringComparer.OrdinalIgnoreCase);
         var window = new MainWindow(settingsService, dictionaryService);
 
         MainWindow = window;
         window.InitializeRuntime();
-        if (showSettings)
-        {
-            window.OpenSettings();
-        }
+        window.OpenSettings();
     }
 
     protected override void OnExit(ExitEventArgs e)

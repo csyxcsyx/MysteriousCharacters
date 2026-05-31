@@ -49,7 +49,7 @@ public sealed class TrayIconService : IDisposable
         var settings = _settingsProvider();
         _enabledMenuItem.Checked = settings.Enabled;
         _enabledMenuItem.Text = settings.Enabled ? "暂停转换" : "开启转换";
-        _notifyIcon.Text = settings.Enabled ? "隐文匣 - 智能混合" : "隐文匣 - 已暂停";
+        _notifyIcon.Text = settings.Enabled ? "隐文匣 v1.0 - 固定映射" : "隐文匣 v1.0 - 已暂停";
     }
 
     public void ShowNotification(string title, string message)

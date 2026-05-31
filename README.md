@@ -1,70 +1,119 @@
-# 隐文匣（Mysterious Characters）
+# 隐文匣 v1.0
 
-隐文匣是一个 Windows 本地托盘小程序。用户在任意普通输入框中选中文字后，按下全局快捷键，即可把原选区替换为经过本地词典转换的文字。
+隐文匣是一个 Windows 本地汉字变换工具。
 
-## 功能
+选中一段中文后，按下快捷键，程序会直接在原位置生成另一组可显示汉字。对已经转换过的文字，也可以尝试还原为原文。
 
-- 默认快捷键：`Ctrl + Alt + E`
-- 托盘菜单：开启或暂停、打开设置、退出程序
-- 智能混合策略：固定 100% 替换，优先增删偏旁，其次使用同音字和形近字
-- 一级常用字覆盖：内置 3500 个常用汉字规则，其中绝大多数包含可验证的偏旁增删候选
-- 真实汉字输出：所有候选都必须是单个可显示汉字，无法可靠转换的字保持原样
-- 剪贴板保护：转换前保存剪贴板，粘贴后按设置延迟恢复
-- 黑名单：按前台进程名跳过敏感或不兼容应用
-- 自定义词典：导入本地 JSON 文件，与内置规则合并使用
-- 单实例运行：重复启动时提示已有后台实例
-- 完全本地：不上传用户输入，不依赖服务器
+- 完全离线运行
+- 不上传输入内容
+- 不持续扫描键盘或输入框
+- 无需安装 .NET 运行时
 
-## 使用
+## 下载
 
-1. 启动 `MysteriousCharacters.exe`。程序会驻留在系统托盘。
-2. 在普通文本输入框中选中一段文字。
-3. 按 `Ctrl + Alt + E`。
-4. 需要修改配置时，双击托盘图标或右键选择“打开设置”。
+1. 打开 [Releases 页面](https://github.com/csyxcsyx/MysteriousCharacters/releases/latest)。
+2. 下载最新版本的 `MysteriousCharacters.exe`。
+3. 双击 exe 即可运行。
 
-程序无法保证在管理员权限窗口、安全输入框、密码框、游戏窗口或特殊防注入软件中生效。遇到这些情况时会跳过处理或显示轻量提示。
+程序启动后会显示主窗口，并在系统托盘中保留图标。
 
-## 构建
+## 快速开始
 
-```powershell
-dotnet build .\MysteriousCharacters.slnx --configuration Release
-```
+### 转换为隐文
 
-## 发布单文件 exe
+1. 在记事本、聊天输入框或其他普通文本框中选中一段中文。
+2. 按下 `Ctrl + Alt + Shift + E`。
+3. 选中的文字会在原位置替换为隐文。
 
-```powershell
-.\publish.ps1
-```
+### 尝试还原原文
 
-发布结果位于 `artifacts\win-x64\MysteriousCharacters.exe`。发布配置为 `win-x64`、自包含、单文件，目标 Windows 用户无需预装 .NET 运行时。
+1. 选中一段由隐文匣转换过的文字。
+2. 按下 `Ctrl + Alt + Shift + D`。
+3. 程序会替换为最可能的原文。
 
-## 冒烟测试
+## 固定快捷键
 
-```powershell
-dotnet run --project .\MysteriousCharacters.SmokeTests -- .\examples\custom-dictionary.example.json .\data\level1-common-characters.txt
-```
+| 操作 | 快捷键 |
+| --- | --- |
+| 转换为隐文 | `Ctrl + Alt + Shift + E` |
+| 尝试还原原文 | `Ctrl + Alt + Shift + D` |
 
-## 本地数据
+快捷键使用固定组合，不需要配置。加入 `Shift` 可以降低与 Windows 和常见软件快捷键发生冲突的概率。
 
-设置和导入后的自定义词典位于：
+如果启动时提示快捷键注册失败，请关闭占用快捷键的软件后重新启动隐文匣。
+
+## 窗口与托盘
+
+| 操作 | 结果 |
+| --- | --- |
+| 点击最小化 | 窗口保留在任务栏 |
+| 点击右上角关闭 | 窗口隐藏，程序继续在托盘运行 |
+| 双击托盘图标 | 重新打开主窗口 |
+| 点击窗口底部“隐藏到托盘” | 主动隐藏窗口 |
+| 点击窗口底部“退出程序” | 完全退出 |
+
+## 转换规则
+
+- 内置 3500 个一级常用汉字规则。
+- 同一个汉字每次都会转换为同一个目标字。
+- 优先选择容易辨认的偏旁关系、同音字和形近字。
+- 避免 `你 → 您`、`他 → 她`、`在 → 再`、`做 → 作` 等容易造成误解的替换。
+- 无法可靠处理的非常用字会保持原样。
+
+## 还原功能说明
+
+隐文匣是可读性文字变换工具，不是密码学加密软件。
+
+为了让输出保持为普通汉字，程序不会插入隐藏标记。少数不同原字可能对应同一个隐文字，因此还原结果是“最可能的原文”，不能保证所有内容都逐字无损恢复。
+
+请勿使用隐文匣保护密码、密钥或高敏感信息。
+
+## 隐私与资源占用
+
+程序通过剪贴板完成选区替换，并在替换后尽量恢复原剪贴板内容。
+
+隐文匣采用事件驱动方式：只有按下快捷键时才会读取当前选区并执行一次转换。程序不会持续扫描输入内容，也不会启动后台轮询任务。
+
+密码管理器、Windows 登录界面和远程桌面等敏感应用会被内置规则静默跳过。管理员权限窗口、安全输入框、密码框、游戏窗口或特殊防注入软件也可能不会响应快捷键。
+
+## 自定义词典
+
+主窗口支持导入本地 JSON 词典。格式参考 [custom-dictionary.example.json](examples/custom-dictionary.example.json)。
+
+自定义词典按源字覆盖内置规则。设置和导入后的词典位于：
 
 ```text
 %LocalAppData%\MysteriousCharacters
 ```
 
-内置精细词典、偏旁家族库和 3500 个一级常用字生成规则作为程序集资源打包进 exe。一级常用字规则优先依据 IDS 顶层拆字关系生成偏旁增删候选：简单字优先增加偏旁，复杂字仅在删除常见偏旁后仍保留可辨认主体时才允许自动减偏旁。随后使用 Unicode 普通话读音和部首笔画数据补充同音、形近候选，形近字不会比原字更简单。无法可靠转换的非常用字保持原样。自定义词典格式可参考 `examples\custom-dictionary.example.json`。每条规则包含一个原字和若干候选字，原字和候选字都必须是单个真实汉字。候选类型可使用：
+## 开发
 
-```text
-Homophone
-AddRadical
-RemoveRadical
-Similar
+构建：
+
+```powershell
+dotnet build .\MysteriousCharacters.slnx --configuration Release
 ```
 
-候选类型的优先级固定为：先在 `AddRadical` 和 `RemoveRadical` 中选择，再考虑 `Homophone`，最后考虑 `Similar`。同一优先级内，`weight` 必须为正整数，值越大，被随机选中的概率越高。
+运行冒烟测试：
 
-## 重新生成常用字规则
+```powershell
+dotnet run --project .\MysteriousCharacters.SmokeTests -- .\examples\custom-dictionary.example.json .\data\level1-common-characters.txt
+```
 
-开发阶段可以使用 `tools\generate_common_character_rules.py` 重新生成常用字规则。仓库中的输入字表为 `data\level1-common-characters.txt`。脚本还需要 CJKVI IDS 数据和 Unicode Unihan 数据，输出为离线 JSON 词典与覆盖率报告。程序运行时不会联网。
+发布自包含单文件 exe：
 
-当前生成结果见 `docs\common-character-coverage.json`。第三方数据来源与许可说明见 `THIRD_PARTY_NOTICES.md`。
+```powershell
+.\publish.ps1
+```
+
+输出文件：
+
+```text
+artifacts\win-x64\MysteriousCharacters.exe
+```
+
+## 词典生成
+
+开发阶段可使用 [generate_common_character_rules.py](tools/generate_common_character_rules.py) 重新生成内置映射。脚本读取 [level1-common-characters.txt](data/level1-common-characters.txt)、CJKVI IDS 数据和 Unicode Unihan 数据；程序运行时不会联网。
+
+覆盖统计见 [common-character-coverage.json](docs/common-character-coverage.json)，第三方数据来源与许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
