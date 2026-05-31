@@ -7,8 +7,9 @@ internal static class NativeMethods
     public const int WmHotkey = 0x0312;
     public const uint ModAlt = 0x0001;
     public const uint ModControl = 0x0002;
-    public const uint ModShift = 0x0004;
     public const uint ModNoRepeat = 0x4000;
+    public const uint WmCopy = 0x0301;
+    public const uint SmtoAbortIfHung = 0x0002;
     public const uint InputKeyboard = 1;
     public const uint KeyEventKeyUp = 0x0002;
     public const ushort VkControl = 0x11;
@@ -17,6 +18,7 @@ internal static class NativeMethods
     public const ushort VkLeftWin = 0x5B;
     public const ushort VkRightWin = 0x5C;
     public const ushort VkC = 0x43;
+    public const ushort VkInsert = 0x2D;
     public const ushort VkV = 0x56;
 
     [DllImport("user32.dll", SetLastError = true)]
@@ -33,14 +35,25 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     public static extern uint GetWindowThreadProcessId(IntPtr windowHandle, out uint processId);
 
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetGUIThreadInfo(uint threadId, ref GuiThreadInfo guiThreadInfo);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr SendMessageTimeout(
+        IntPtr windowHandle,
+        uint message,
+        UIntPtr wordParameter,
+        IntPtr longParameter,
+        uint flags,
+        uint timeout,
+        out UIntPtr result);
+
     [DllImport("user32.dll", SetLastError = true)]
     public static extern uint SendInput(uint inputCount, Input[] inputs, int inputSize);
 
     [DllImport("user32.dll")]
     public static extern short GetAsyncKeyState(int virtualKey);
-
-    [DllImport("user32.dll")]
-    public static extern uint GetClipboardSequenceNumber();
 
     public static bool AreModifierKeysReleased()
     {
@@ -62,6 +75,29 @@ internal static class NativeMethods
         };
 
         return SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>()) == inputs.Length;
+    }
+
+    public static bool TryCopyFocusedControl(IntPtr foregroundWindow)
+    {
+        var threadId = GetWindowThreadProcessId(foregroundWindow, out _);
+        var info = new GuiThreadInfo
+        {
+            Size = (uint)Marshal.SizeOf<GuiThreadInfo>()
+        };
+        if (threadId == 0 || !GetGUIThreadInfo(threadId, ref info))
+        {
+            return false;
+        }
+
+        var target = info.Focus != IntPtr.Zero ? info.Focus : foregroundWindow;
+        return SendMessageTimeout(
+            target,
+            WmCopy,
+            UIntPtr.Zero,
+            IntPtr.Zero,
+            SmtoAbortIfHung,
+            300,
+            out _) != IntPtr.Zero;
     }
 
     private static Input CreateKeyboardInput(ushort key, bool keyUp)
@@ -113,6 +149,29 @@ internal static class NativeMethods
         public uint Flags;
         public uint Time;
         public UIntPtr ExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GuiThreadInfo
+    {
+        public uint Size;
+        public uint Flags;
+        public IntPtr Active;
+        public IntPtr Focus;
+        public IntPtr Capture;
+        public IntPtr MenuOwner;
+        public IntPtr MoveSize;
+        public IntPtr Caret;
+        public Rect CaretRect;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Rect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
     }
 
     [StructLayout(LayoutKind.Sequential)]

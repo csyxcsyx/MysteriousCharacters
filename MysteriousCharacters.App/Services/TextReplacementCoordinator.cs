@@ -73,11 +73,13 @@ public sealed class TextReplacementCoordinator
                 return;
             }
 
-            var selectedText = await TryCopySelectionAsync(settings);
+            var selectedText = await TryCopySelectionAsync(settings, foregroundWindow);
             if (selectedText is null)
             {
                 Restore(snapshot);
-                _notify("没有取得选中文本", "请先在可编辑输入框中选中一段文字。");
+                _notify(
+                    "没有读取到选中文本",
+                    "请确认已选中文字。若目标软件以管理员身份运行，请以相同权限启动隐文匣。");
                 return;
             }
 
@@ -113,33 +115,51 @@ public sealed class TextReplacementCoordinator
         }
     }
 
-    private async Task<string?> TryCopySelectionAsync(AppSettings settings)
+    private async Task<string?> TryCopySelectionAsync(AppSettings settings, IntPtr foregroundWindow)
     {
+        var fallbackTimeout = Math.Min(settings.CopyTimeoutMilliseconds, 700);
+
         for (var attempt = 0; attempt < settings.CopyRetryCount; attempt++)
         {
-            if (!_clipboardService.TryClear())
+            var copiedText = await TryCopyWithAsync(
+                () => NativeMethods.SendShortcut(NativeMethods.VkC),
+                settings.CopyTimeoutMilliseconds);
+            if (copiedText is not null)
             {
-                return null;
+                return copiedText;
             }
 
-            var sequenceNumber = NativeMethods.GetClipboardSequenceNumber();
-            await Task.Delay(35);
-
-            if (NativeMethods.SendShortcut(NativeMethods.VkC))
+            copiedText = await TryCopyWithAsync(
+                () => NativeMethods.TryCopyFocusedControl(foregroundWindow),
+                fallbackTimeout);
+            if (copiedText is not null)
             {
-                var copiedText = await WaitForCopiedTextAsync(
-                    sequenceNumber,
-                    settings.CopyTimeoutMilliseconds);
-                if (copiedText is not null)
-                {
-                    return copiedText;
-                }
+                return copiedText;
+            }
+
+            copiedText = await TryCopyWithAsync(
+                () => NativeMethods.SendShortcut(NativeMethods.VkInsert),
+                fallbackTimeout);
+            if (copiedText is not null)
+            {
+                return copiedText;
             }
 
             await Task.Delay(80);
         }
 
         return null;
+    }
+
+    private async Task<string?> TryCopyWithAsync(Func<bool> copy, int timeoutMilliseconds)
+    {
+        if (!_clipboardService.TryClear())
+        {
+            return null;
+        }
+
+        await Task.Delay(45);
+        return copy() ? await WaitForCopiedTextAsync(timeoutMilliseconds) : null;
     }
 
     private static async Task<bool> WaitForModifierKeysReleasedAsync(int timeoutMilliseconds)
@@ -160,14 +180,13 @@ public sealed class TextReplacementCoordinator
         return false;
     }
 
-    private async Task<string?> WaitForCopiedTextAsync(uint previousSequenceNumber, int timeoutMilliseconds)
+    private async Task<string?> WaitForCopiedTextAsync(int timeoutMilliseconds)
     {
         var stopwatch = Stopwatch.StartNew();
 
         while (stopwatch.ElapsedMilliseconds < timeoutMilliseconds)
         {
-            if (NativeMethods.GetClipboardSequenceNumber() != previousSequenceNumber &&
-                _clipboardService.TryGetText(out var text) &&
+            if (_clipboardService.TryGetText(out var text) &&
                 !string.IsNullOrEmpty(text))
             {
                 return text;

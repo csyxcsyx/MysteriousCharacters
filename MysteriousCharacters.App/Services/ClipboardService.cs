@@ -20,6 +20,11 @@ public sealed class ClipboardService
 {
     private const int RetryCount = 6;
     private const int RetryDelayMilliseconds = 35;
+    private static readonly WpfTextDataFormat[] TextFormats =
+    [
+        WpfTextDataFormat.UnicodeText,
+        WpfTextDataFormat.Text
+    ];
 
     public bool TryCapture(out ClipboardSnapshot? snapshot)
     {
@@ -67,9 +72,19 @@ public sealed class ClipboardService
         string? clipboardText = null;
         var succeeded = TryClipboardOperation(() =>
         {
-            clipboardText = WpfClipboard.ContainsText(WpfTextDataFormat.UnicodeText)
-                ? WpfClipboard.GetText(WpfTextDataFormat.UnicodeText)
-                : null;
+            foreach (var format in TextFormats)
+            {
+                if (!WpfClipboard.ContainsText(format))
+                {
+                    continue;
+                }
+
+                clipboardText = WpfClipboard.GetText(format);
+                if (!string.IsNullOrEmpty(clipboardText))
+                {
+                    break;
+                }
+            }
         });
 
         text = clipboardText;

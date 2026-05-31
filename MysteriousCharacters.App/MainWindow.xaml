@@ -183,7 +183,7 @@
                             <TextBlock Style="{StaticResource SectionLabel}" Text="01 / QUICK_START" />
                             <TextBlock Style="{StaticResource SectionTitle}" Text="两步开始使用" />
                             <TextBlock Style="{StaticResource BodyMuted}"
-                                       Text="1. 在任意普通输入框中选中文字。&#x0a;2. 按下对应快捷键，替换会在原位置完成。" />
+                                       Text="1. 在任意普通输入框中选中文字。&#x0a;2. 按 Ctrl + Alt + E 转换；按 Ctrl + Alt + D 尝试还原。" />
                         </StackPanel>
                     </Border>
                     <Border Grid.Column="2" Style="{StaticResource Card}">
@@ -207,7 +207,7 @@
                             <TextBlock Style="{StaticResource SectionLabel}" Text="03 / HOTKEYS" />
                             <TextBlock Style="{StaticResource SectionTitle}" Text="快捷键" />
                             <TextBlock Style="{StaticResource BodyMuted}"
-                                       Text="程序使用两组固定快捷键，便于记忆并降低误触概率。" />
+                                       Text="固定使用三键组合，无需配置，便于记忆并降低误触概率。" />
                         </StackPanel>
                         <Grid Grid.Column="1" Margin="18,0,0,0">
                             <Grid.RowDefinitions>
