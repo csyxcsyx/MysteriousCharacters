@@ -27,6 +27,7 @@ VerifyReplacement(transformer, "清吗饭");
 VerifyReplacement(transformer, "未土日");
 VerifyReplacement(transformer, "我看着你的脸，轻刷着和弦；情人节卡片，手写的从前。。。");
 VerifyReplacement(transformer, "一乙二十丁厂七卜八人入儿匕几九刁了刀力乃");
+VerifyMultilineReplacement(transformer);
 VerifyDeterministicReplacement(transformer, "天青色等烟雨，而我在等你。");
 VerifyRoundTrip(transformer, "乙八九");
 VerifyNeverProduces(transformer, "你", ["您"]);
@@ -44,6 +45,7 @@ Assert(mergedTransformer.RuleCount == transformer.RuleCount + 1, "Custom diction
 VerifyReplacement(mergedTransformer, "鑫");
 VerifyRoundTrip(mergedTransformer, "鑫");
 VerifySettingsPersistence();
+VerifyDiagnosticLogging();
 
 Console.WriteLine($"built_in_rules={transformer.RuleCount}");
 Console.WriteLine($"merged_rules={mergedTransformer.RuleCount}");
@@ -87,6 +89,22 @@ static void VerifyDeterministicReplacement(TextTransformer transformer, string s
     }
 
     Console.WriteLine($"deterministic={source}->{expected}");
+}
+
+static void VerifyMultilineReplacement(TextTransformer transformer)
+{
+    const string firstLine = "原文：我看着你的脸，轻刷着和弦；情人节卡片，手写的从前......";
+    const string secondLine = "原文：天青色等烟雨，而我在等你......";
+
+    foreach (var separator in new[] { "\r\n", "\n" })
+    {
+        var source = firstLine + separator + secondLine;
+        var transformed = transformer.Transform(source);
+        var expected = transformer.Transform(firstLine) + separator + transformer.Transform(secondLine);
+        Assert(transformed == expected, "Multiline replacement was truncated or changed line endings.");
+    }
+
+    Console.WriteLine("multiline_replacement=passed");
 }
 
 static void VerifyRoundTrip(TextTransformer transformer, string source)
@@ -140,6 +158,30 @@ static void VerifySettingsPersistence()
         Assert(!savedSettings.RestoreClipboard, "Clipboard setting was not persisted.");
         Assert(!savedSettings.ShowNotifications, "Notification setting was not persisted.");
         Console.WriteLine("settings_persistence=passed");
+    }
+    finally
+    {
+        if (Directory.Exists(dataDirectory))
+        {
+            Directory.Delete(dataDirectory, true);
+        }
+    }
+}
+
+static void VerifyDiagnosticLogging()
+{
+    var dataDirectory = Path.Combine(
+        Path.GetTempPath(),
+        $"MysteriousCharacters-Diagnostics-{Guid.NewGuid():N}");
+
+    try
+    {
+        var service = new DiagnosticLogService(dataDirectory);
+        service.Write("test", "alpha\r\nbeta\tgamma");
+        var lines = File.ReadAllLines(service.LogPath);
+        Assert(lines.Length == 1, "Diagnostic log entries must stay on one line.");
+        Assert(lines[0].EndsWith("\ttest\talpha  beta gamma"), "Diagnostic log sanitization failed.");
+        Console.WriteLine("diagnostic_logging=passed");
     }
     finally
     {

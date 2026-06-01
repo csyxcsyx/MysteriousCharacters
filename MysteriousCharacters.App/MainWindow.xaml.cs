@@ -14,6 +14,7 @@ public partial class MainWindow : System.Windows.Window
 {
     private readonly SettingsService _settingsService;
     private readonly DictionaryService _dictionaryService;
+    private readonly DiagnosticLogService _diagnosticLogService;
     private readonly TextTransformer _transformer;
     private readonly TextReplacementCoordinator _coordinator;
     private AppSettings _settings;
@@ -25,13 +26,17 @@ public partial class MainWindow : System.Windows.Window
     {
         _settingsService = settingsService;
         _dictionaryService = dictionaryService;
+        _diagnosticLogService = new DiagnosticLogService(_settingsService.DataDirectory);
+        _diagnosticLogService.WriteRuntime();
         _settings = _settingsService.Load();
         _transformer = new TextTransformer(_dictionaryService.LoadRules(_settings.CustomDictionaryPath));
         _coordinator = new TextReplacementCoordinator(
             new ClipboardService(),
+            new UiAutomationSelectionService(),
             _transformer,
             () => _settings,
-            Notify);
+            Notify,
+            _diagnosticLogService);
 
         InitializeComponent();
         ApplySettingsToControls();
@@ -46,6 +51,9 @@ public partial class MainWindow : System.Windows.Window
         _hotkeyService.Pressed += HotkeyService_OnPressed;
 
         var registered = _hotkeyService.TryRegister();
+        _diagnosticLogService.Write(
+            "hotkey-registration",
+            $"registered={registered}; rules={_transformer.RuleCount}; decode_rules={_transformer.DecodeRuleCount}");
         _trayIconService = new TrayIconService(
             () => _settings,
             SetEnabledFromTray,

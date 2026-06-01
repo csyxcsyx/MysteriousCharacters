@@ -90,7 +90,7 @@
 
 ## 隐私与资源占用
 
-程序通过剪贴板完成选区替换，并在替换后尽量恢复原剪贴板内容。
+程序优先使用 Windows UI Automation 或标准文本框消息完成选区替换。目标软件不支持直接替换时，程序会回退到剪贴板方案，并在替换后尽量恢复原剪贴板内容。
 
 隐文匣采用事件驱动方式：只有按下快捷键时才会读取当前选区并执行一次转换。程序不会持续扫描输入内容，也不会启动后台轮询任务。
 
@@ -103,6 +103,8 @@
 请先在记事本等普通文本框中重试。如果目标软件以管理员身份运行，请以相同权限启动隐文匣；Windows 会限制普通权限程序向管理员窗口发送复制和粘贴操作。
 
 部分安全输入框、密码框、游戏窗口和特殊防注入软件不允许外部程序读取选区，隐文匣会跳过这些窗口。
+
+如果普通输入框仍然无法转换，请打开主窗口底部的“打开数据目录”，查看 `diagnostics.log`。日志只记录系统架构、兼容策略和失败原因，不记录选中的文字内容。
 
 ## 自定义词典
 
@@ -128,16 +130,50 @@ dotnet build .\MysteriousCharacters.slnx --configuration Release
 dotnet run --project .\MysteriousCharacters.SmokeTests -- .\examples\custom-dictionary.example.json .\data\level1-common-characters.txt
 ```
 
+运行 Windows 输入框集成测试：
+
+```powershell
+dotnet run --project .\MysteriousCharacters.DesktopTests --configuration Release
+```
+
+该测试会创建临时输入框并切换前台焦点，请在 Windows 桌面已解锁时运行。
+
 发布自包含单文件 exe：
 
 ```powershell
 .\publish.ps1
 ```
 
-输出文件：
+默认输出 x64 原生版本：
 
 ```text
 artifacts\win-x64\MysteriousCharacters.exe
+```
+
+发布全部 Windows CPU 架构版本：
+
+```powershell
+.\publish-all.ps1
+```
+
+如果只能发送一个 exe，优先发送兼容版：
+
+```text
+artifacts\windows-compatible\MysteriousCharacters.exe
+```
+
+兼容版使用 x86 自包含单文件，可在 x86、x64 和 Windows on Arm 的兼容层运行。追求原生性能时可按设备架构选择：
+
+```text
+artifacts\win-x64\MysteriousCharacters.exe
+artifacts\win-x86\MysteriousCharacters.exe
+artifacts\win-arm64\MysteriousCharacters.exe
+```
+
+文件校验值会写入：
+
+```text
+artifacts\SHA256SUMS.txt
 ```
 
 ## 词典生成
